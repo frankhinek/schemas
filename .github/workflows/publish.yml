@@ -81,6 +81,11 @@ jobs:
       - name: List contents of hosted directory
         run: ls -R hosted
 
+      - name: Upload hosted directory
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: hosted
+
   deploy:
     needs: process-schemas
     name: Deploy
@@ -89,12 +94,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './hosted'
+      # - name: Setup Pages
+        # uses: actions/configure-pages@v5
+      # - name: Upload artifact
+        # uses: actions/upload-pages-artifact@v3
+        # with:
+          # path: './hosted'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
