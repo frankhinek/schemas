@@ -1,0 +1,3 @@
+# Ignore everything in the hosted directory except the index.html file
+/hosted/*
+!/hosted/index.html
