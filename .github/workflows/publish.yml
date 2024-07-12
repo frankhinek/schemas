@@ -53,13 +53,16 @@ jobs:
           for dir in "${directories[@]}"; do
             echo "Processing $dir"
             if [ -d "$dir" ]; then
+              # Create the corresponding directory in hosted/
+              mkdir -p "hosted/$dir"
+
               if is_submodule "$dir"; then
                 echo "$dir is a submodule"
                 (
                   cd "$dir"
                   just schemas
                   if [ -d ".schemas" ]; then
-                    cp -R .schemas/* ../hosted/
+                    cp -R .schemas/* "../hosted/$dir/"
                   else
                     echo "Error: .schemas directory not found in $dir after running 'just schemas'"
                     exit 1  # This will cause the workflow to fail
@@ -67,7 +70,7 @@ jobs:
                 )
               else
                 echo "$dir is not a submodule"
-                cp -R "$dir"/* hosted/
+                cp -R "$dir"/* "hosted/$dir/"
               fi
             else
               echo "Error: $dir does not exist"
