@@ -1,0 +1,95 @@
+name: Publish Schemas
+
+on:
+  # Trigger the workflow every time you push to the `main` branch
+  push:
+    branches: [ main ]
+
+# Allow this job to clone the repo and create a page deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  BUILD_PATH: "docs"
+
+jobs:
+  process-schemas:
+    name: Process Schemas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Install just
+        run: brew install just
+      - name: Process directories
+        run: |
+          # List of directories to process
+          directories=("tbdex" "kcc")
+
+          # Function to check if a directory is a submodule
+          is_submodule() {
+            local dir="$1"
+            if [ -f .gitmodules ] && git submodule status "$dir" &> /dev/null; then
+              return 0
+            else
+              return 1
+            fi
+          }
+
+          # Process each directory
+          for dir in "${directories[@]}"; do
+            echo "Processing $dir"
+            if [ -d "$dir" ]; then
+              if is_submodule "$dir"; then
+                echo "$dir is a submodule"
+                (
+                  cd "$dir"
+                  just schemas
+                  if [ -d ".schemas" ]; then
+                    cp -R .schemas/* ../hosted/
+                  else
+                    echo "Error: .schemas directory not found in $dir after running 'just schemas'"
+                    exit 1  # This will cause the workflow to fail
+                  fi
+                )
+              else
+                echo "$dir is not a submodule"
+                cp -R "$dir"/* hosted/
+              fi
+            else
+              echo "Error: $dir does not exist"
+              exit 1  # This will cause the workflow to fail
+            fi
+          done
+
+      - name: List contents of hosted directory
+        run: ls -R hosted
+
+  deploy:
+    needs: process-schemas
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './hosted'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
