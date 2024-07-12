@@ -42,7 +42,7 @@ jobs:
           # Function to check if a directory is a submodule
           is_submodule() {
             local dir="$1"
-            if [ -f .gitmodules ] && git submodule status "$dir" &> /dev/null; then
+            if [ -f .gitmodules ] && git config --file .gitmodules --get "submodule.$dir.path" &> /dev/null; then
               return 0
             else
               return 1
